@@ -11,6 +11,7 @@ This project automates the deployment of a Node.js backend and a React frontend 
 - Application Load Balancer (ALB)
 - ALB listening on ports 80 and 3000
 - Domain Configuration in CloudFare
+- Setup Auto Scaling Group
 - Deployment Verification
 
 ## Architecture
@@ -89,7 +90,54 @@ Verify Frontend and Backend
 - Click **Save**
 - Wait for propagation (~5 mins)
 
-### 8. Verify the Deployment
+#### 8. Setup Auto Scaling Group (ASG)
+
+##### Create Launch Configuration
+
+1. **Create an AMI (Amazon Machine Image) from an Existing EC2 Instance:**
+   - Log in to the [EC2 Console](https://console.aws.amazon.com/ec2/).
+   - Select your **running EC2 instance**.
+   - Click **Actions** > **Image and Templates** > **Create Image**.
+   - In the dialog box, provide a name for the AMI (e.g., `mern-backend-frontend-ami`).
+   - Click **Create Image**. The AMI creation process will take a few minutes.
+   - After the image is created, you can find it under **AMIs** in the EC2 Console.
+
+2. **Create Launch Configuration:**
+   - In the **EC2 Console**, go to **Launch Configurations**.
+   - Click **Create Launch Configuration**.
+   - Choose the **AMI ID** you created earlier.
+   - Select your **instance type** (e.g., `t3.micro`).
+   - Attach the **security group** that allows HTTP traffic on ports 80 and 3000.
+   - Select the **VPC** where your EC2 instances are located.
+   - Provide the **key pair** for SSH access.
+   - Click **Create Launch Configuration**.
+
+##### Create Auto Scaling Group
+
+1. **Create Auto Scaling Group:**
+   - Go to **Auto Scaling Groups** > **Create Auto Scaling Group**.
+   - Choose the launch configuration created above.
+   - Specify the desired number of instances (e.g., 1) and configure the **minimum** and **maximum** instance counts.
+   - Select your **VPC** and **subnets**, use default VPC & subnets, you can refer your existing EC2 details to get these.
+   - Enable **Load Balancing** by selecting your **Application Load Balancer (ALB)**.
+   - Click **Next** and configure notifications, if needed.
+   - Click **Create Auto Scaling Group**.
+
+     <img width="815" alt="image" src="https://github.com/user-attachments/assets/ac55456f-9bc2-4af0-87bf-c56c53be63b8" />
+  
+  - SNS details whenever instances are created
+
+    <img width="643" alt="image" src="https://github.com/user-attachments/assets/69377bb0-aa34-4bfc-93a0-1b67a6c4b6c8" />
+
+
+2. **Set Dynamic Scaling Based on CPU Usage:**
+   - In the **Auto Scaling Group** settings, configure **CPU utilization alarms** using Amazon **CloudWatch**:
+     - **Scale Up**: Set an alarm for when the CPU usage is over **50%** for more than **5 minutes**.
+
+    <img width="515" alt="image" src="https://github.com/user-attachments/assets/abf092ac-f033-4177-bb23-91c0d0ea0e0c" />
+
+       
+### 9. Verify the Deployment
 - Open `http://hero.yourdomain.com`
 - Ensure React frontend loads
 - Open browser console & check API calls (`http://your-ec2-ip:3001`)
